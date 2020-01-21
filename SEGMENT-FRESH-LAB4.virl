@@ -1057,7 +1057,15 @@ group cisco-support
 password lab
 !
 !
-hostname P5
+
+interface MgmtEth0/RP0/CPU0/0
+  description OOB Management
+  ! Configured on launch
+  vrf Mgmt-intf
+ no ipv4 address dhcp
+  no shutdown
+!
+ hostname P5
 group ISIS_TI-LFA
  router isis '.*'
   interface 'Gi.*'
@@ -1108,12 +1116,7 @@ interface Loopback0
  ipv4 address 1.1.1.5 255.255.255.255
  ipv6 address 2001::1:1:1:5/128
 !
-interface MgmtEth0/RP0/CPU0/0
-description OOB Management
-  ! Configured on launch
-  vrf Mgmt-intf
- ipv4 address dhcp
-  no shutdown
+
 !
 interface GigabitEthernet0/0/0/0
  description to P1
@@ -1229,7 +1232,10 @@ mpls traffic-eng
 !
 segment-routing
 !
+end
+
 !
+
         </entry>
             <entry key="AutoNetkit.mgmt_ip" type="string"/>
         </extensions>
