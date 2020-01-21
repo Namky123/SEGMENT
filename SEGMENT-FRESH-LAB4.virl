@@ -1792,215 +1792,144 @@ group root-lr
 group cisco-support
 password lab
 !
+hostname P8
+group ISIS_TI-LFA
+ router isis '.*'
+  interface 'Gi.*'
+   address-family ipv4 unicast
+    fast-reroute per-prefix
+    fast-reroute per-prefix ti-lfa
+   !
+  !
+ !
+end-group
+logging console emergencies
+service timestamps log datetime msec
+service timestamps debug datetime msec
+domain lookup disable
+telnet vrf default ipv4 server max-servers 10
+username cisco
+ group root-lr
+ group cisco-support
+ secret 5 $1$uU0k$A.qfuvA7IipShgfY0RA1b1
+!         
+cdp
+line template vty
+ timestamp
+ exec-timeout 720 0
+!
+line console
+ timestamp disable
+ exec-timeout 0 0
+!
+line default
+ exec-timeout 720 0
+!
+vty-pool default 0 50
+icmp ipv4 rate-limit unreachable disable
+call-home
+ service active
+ contact smart-licensing
+ profile CiscoTAC-1
+  active
+  destination transport-method http
+ !
 !
 interface Loopback0
-  description Loopback
-  ipv4 address 192.168.0.14 255.255.255.255
-!
-interface GigabitEthernet0/0/0/0
-  description to P9
-  ipv4 address 10.0.0.113 255.255.255.252
-  no shutdown
-!
-interface GigabitEthernet0/0/0/1
-  description to P7
-  ipv4 address 10.0.0.106 255.255.255.252
-  no shutdown
-!
-interface GigabitEthernet0/0/0/2
-  description to P3
-  ipv4 address 10.0.0.62 255.255.255.252
-  no shutdown
-!
-interface GigabitEthernet0/0/0/3
-  description to PE5
-  ipv4 address 10.0.0.93 255.255.255.252
-  no shutdown
-!
-interface GigabitEthernet0/0/0/4
-  description GigabitEthernet0/0/0/4
-  no ipv4 address
-  no shutdown
-!
-interface GigabitEthernet0/0/0/5
-  description GigabitEthernet0/0/0/5
-  no ipv4 address
-  no shutdown
-!
-interface GigabitEthernet0/0/0/6
-  description GigabitEthernet0/0/0/6
-  no ipv4 address
-  no shutdown
-!
-interface GigabitEthernet0/0/0/7
-  description GigabitEthernet0/0/0/7
-  no ipv4 address
-  no shutdown
+ description Loopback
+ ipv4 address 1.1.1.8 255.255.255.255
 !
 interface MgmtEth0/RP0/CPU0/0
-  description OOB Management
+ description OOB Management
   ! Configured on launch
   vrf Mgmt-intf
-  no ipv4 address
+ ipv4 address dhcp
   no shutdown
 !
+interface GigabitEthernet0/0/0/0
+ description to P9
+ cdp
+ ipv4 address 99.8.9.8 255.255.255.0
 !
-router ospf 1
-  log adjacency changes
-  area 0
-    interface GigabitEthernet0/0/0/0
-      cost 1
-    !
-    interface GigabitEthernet0/0/0/1
-      cost 1
-    !
-    interface GigabitEthernet0/0/0/2
-      cost 1
-    !
-    interface GigabitEthernet0/0/0/3
-      cost 1
-    !
-    interface Loopback0
-      passive enable
-    !
-  !
+interface GigabitEthernet0/0/0/1
+ description to P7
+ cdp
+ ipv4 address 99.7.8.8 255.255.255.0
 !
-route-policy bgp_in
-  pass
-end-policy
+interface GigabitEthernet0/0/0/2
+ description to P3
+ cdp
+ ipv4 address 99.3.8.8 255.255.255.0
 !
-route-policy bgp_out
-  pass
-end-policy
+interface GigabitEthernet0/0/0/3
+ description to PE5
+ cdp
+ ipv4 address 99.8.15.8 255.255.255.0
 !
-router bgp 1
-  bgp router-id 192.168.0.14
+interface GigabitEthernet0/0/0/4
+ shutdown
+!
+interface GigabitEthernet0/0/0/5
+ shutdown
+!
+interface GigabitEthernet0/0/0/6
+ shutdown
+!
+router isis 2
+ is-type level-2-only
+ net 49.0002.1111.0000.0008.00
+ address-family ipv4 unicast
+  metric-style wide
+  mpls traffic-eng level-2-only
+  mpls traffic-eng router-id Loopback0
+  segment-routing mpls
+ !
+ interface Loopback0
+  passive
   address-family ipv4 unicast
-    network 192.168.0.14/32
+   prefix-sid absolute 16008
   !
-! iBGP
+ !
+ interface GigabitEthernet0/0/0/0
+  point-to-point
+  address-family ipv4 unicast
+  !
+ !
+ interface GigabitEthernet0/0/0/1
+  point-to-point
+  address-family ipv4 unicast
+  !
+ !
+ interface GigabitEthernet0/0/0/2
+  point-to-point
+  address-family ipv4 unicast
+  !
+ !
+ interface GigabitEthernet0/0/0/3
+  point-to-point
+  address-family ipv4 unicast
+   metric 500
+  !
+ !
 !
-! iBGP peers
-  !
-  neighbor 192.168.0.1
-    description iBGP peer P1
-    remote-as 1
-    update-source Loopback0
-    address-family ipv4 unicast
-    !
-    !
-  !
-  neighbor 192.168.0.5
-    description iBGP peer P2
-    remote-as 1
-    update-source Loopback0
-    address-family ipv4 unicast
-    !
-    !
-  !
-  neighbor 192.168.0.7
-    description iBGP peer P3
-    remote-as 1
-    update-source Loopback0
-    address-family ipv4 unicast
-    !
-    !
-  !
-  neighbor 192.168.0.8
-    description iBGP peer P4
-    remote-as 1
-    update-source Loopback0
-    address-family ipv4 unicast
-    !
-    !
-  !
-  neighbor 192.168.0.10
-    description iBGP peer P5
-    remote-as 1
-    update-source Loopback0
-    address-family ipv4 unicast
-    !
-    !
-  !
-  neighbor 192.168.0.12
-    description iBGP peer P6
-    remote-as 1
-    update-source Loopback0
-    address-family ipv4 unicast
-    !
-    !
-  !
-  neighbor 192.168.0.13
-    description iBGP peer P7
-    remote-as 1
-    update-source Loopback0
-    address-family ipv4 unicast
-    !
-    !
-  !
-  neighbor 192.168.0.15
-    description iBGP peer P9
-    remote-as 1
-    update-source Loopback0
-    address-family ipv4 unicast
-    !
-    !
-  !
-  neighbor 192.168.0.3
-    description iBGP peer PE1
-    remote-as 1
-    update-source Loopback0
-    address-family ipv4 unicast
-    !
-    !
-  !
-  neighbor 192.168.0.4
-    description iBGP peer PE2
-    remote-as 1
-    update-source Loopback0
-    address-family ipv4 unicast
-    !
-    !
-  !
-  neighbor 192.168.0.6
-    description iBGP peer PE3
-    remote-as 1
-    update-source Loopback0
-    address-family ipv4 unicast
-    !
-    !
-  !
-  neighbor 192.168.0.9
-    description iBGP peer PE4
-    remote-as 1
-    update-source Loopback0
-    address-family ipv4 unicast
-    !
-    !
-  !
-  neighbor 192.168.0.11
-    description iBGP peer PE5
-    remote-as 1
-    update-source Loopback0
-    address-family ipv4 unicast
-    !
-    !
-  !
-  neighbor 192.168.0.2
-    description iBGP peer RR1
-    remote-as 1
-    update-source Loopback0
-    address-family ipv4 unicast
-    !
-    !
+mpls oam
+!
+mpls traffic-eng
+ path-selection
+  metric igp
+ !
+!
+segment-routing
+!
+
 !
         </entry>
             <entry key="AutoNetkit.mgmt_ip" type="string"/>
         </extensions>
-        <interface id="0" name="GigabitEthernet0/0/0/0" ipv4="10.0.0.113" netPrefixLenV4="30"/>
-        <interface id="1" name="GigabitEthernet0/0/0/1" ipv4="10.0.0.106" netPrefixLenV4="30"/>
-        <interface id="2" name="GigabitEthernet0/0/0/2" ipv4="10.0.0.62" netPrefixLenV4="30"/>
-        <interface id="3" name="GigabitEthernet0/0/0/3" ipv4="10.0.0.93" netPrefixLenV4="30"/>
+        <interface id="0" name="GigabitEthernet0/0/0/0" ipv4="99.8.9.8" netPrefixLenV4="24"/>
+        <interface id="1" name="GigabitEthernet0/0/0/1" ipv4="99.7.8.8" netPrefixLenV4="24"/>
+        <interface id="2" name="GigabitEthernet0/0/0/2" ipv4="99.3.8.8" netPrefixLenV4="24"/>
+        <interface id="3" name="GigabitEthernet0/0/0/3" ipv4="99.8.15.8" netPrefixLenV4="24"/>
         <interface id="4" name="GigabitEthernet0/0/0/4"/>
         <interface id="5" name="GigabitEthernet0/0/0/5"/>
         <interface id="6" name="GigabitEthernet0/0/0/6"/>
