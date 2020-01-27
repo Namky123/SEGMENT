@@ -3807,7 +3807,6 @@ segment-routing
     <connection dst="/virl:topology/virl:node[3]/virl:interface[1]" src="/virl:topology/virl:node[7]/virl:interface[1]"/>
     <connection dst="/virl:topology/virl:node[4]/virl:interface[3]" src="/virl:topology/virl:node[3]/virl:interface[2]"/>
     <connection dst="/virl:topology/virl:node[11]/virl:interface[1]" src="/virl:topology/virl:node[3]/virl:interface[4]"/>
-    <connection dst="/virl:topology/virl:node[12]/virl:interface[2]" src="/virl:topology/virl:node[3]/virl:interface[5]"/>
     <connection dst="/virl:topology/virl:node[8]/virl:interface[3]" src="/virl:topology/virl:node[3]/virl:interface[6]"/>
     <connection dst="/virl:topology/virl:node[9]/virl:interface[4]" src="/virl:topology/virl:node[3]/virl:interface[7]"/>
     <connection dst="/virl:topology/virl:node[6]/virl:interface[1]" src="/virl:topology/virl:node[4]/virl:interface[2]"/>
