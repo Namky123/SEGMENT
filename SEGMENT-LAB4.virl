@@ -1121,66 +1121,108 @@ call-home
   active
   destination transport-method http
  !
+hostname P5
+group ISIS_TI-LFA
+ router isis '.*'
+  interface 'Gi.*'
+   address-family ipv4 unicast
+    fast-reroute per-prefix
+    fast-reroute per-prefix ti-lfa
+   !
+  !
+ !
+end-group
+logging console disable
+service timestamps log datetime msec
+service timestamps debug datetime msec
+domain lookup disable
+telnet vrf default ipv4 server max-servers 10
+username cisco
+ group root-lr
+ group cisco-support
+ secret 5 $1$kMcc$/TQKbNVWx62cC0vh.bpoG.
+!         
+cdp
+line template vty
+ timestamp
+ exec-timeout 720 0
+!
+line console
+ timestamp disable
+ exec-timeout 0 0
+!
+line default
+ exec-timeout 720 0
+!
+vty-pool default 0 50
+icmp ipv4 rate-limit unreachable disable
+call-home
+ service active
+ contact smart-licensing
+ profile CiscoTAC-1
+  active
+  destination transport-method http
+ !
 !
 interface Loopback0
  description Loopback
  ipv4 address 1.1.1.5 255.255.255.255
- ipv6 address 2001::1:1:1:5/128
 !
 interface MgmtEth0/RP0/CPU0/0
-description OOB Management
+ description OOB Management
   ! Configured on launch
   vrf Mgmt-intf
  ipv4 address dhcp
   no shutdown
 !
+!
 interface GigabitEthernet0/0/0/0
  description to P1
  cdp
  ipv4 address 99.1.5.5 255.255.255.0
- ipv6 address 2001::99:1:5:5/112
 !
 interface GigabitEthernet0/0/0/1
  description to P6
  cdp
  ipv4 address 99.5.6.5 255.255.255.0
- ipv6 address 2001::99:5:6:5/112
 !
 interface GigabitEthernet0/0/0/2
  description to P4
  cdp
  ipv4 address 99.4.5.5 255.255.255.0
- ipv6 address 2001::99:4:5:5/112
 !
 interface GigabitEthernet0/0/0/3
  description to PE1
  cdp
  ipv4 address 99.5.11.5 255.255.255.0
- ipv6 address 2001::99:5:11:5/112
 !
 interface GigabitEthernet0/0/0/4
  description to PE4
  cdp
  ipv4 address 99.5.14.5 255.255.255.0
- ipv6 address 2001::99:5:14:5/112
 !
 interface GigabitEthernet0/0/0/5
  shutdown
-!         
+!
 interface GigabitEthernet0/0/0/6
  shutdown
+!
+route-policy bgp_in
+  pass
+end-policy
+!
+route-policy bgp_out
+  pass    
+end-policy
 !
 router isis 1
  is-type level-2-only
  net 49.0001.0000.0000.0005.00
+ distribute link-state
  address-family ipv4 unicast
   metric-style wide
   mpls traffic-eng level-2-only
   mpls traffic-eng router-id Loopback0
-  segment-routing mpls
- !
- address-family ipv6 unicast
-  metric-style wide
   segment-routing mpls
  !
  interface Loopback0
@@ -1188,32 +1230,20 @@ router isis 1
   address-family ipv4 unicast
    prefix-sid index 5
   !
-  address-family ipv6 unicast
-   prefix-sid index 1005
-  !
  !
  interface GigabitEthernet0/0/0/0
   point-to-point
   address-family ipv4 unicast
   !
-  address-family ipv6 unicast
-  !
- !
+ !        
  interface GigabitEthernet0/0/0/1
   point-to-point
   address-family ipv4 unicast
-   metric 40
-  !
-  address-family ipv6 unicast
-   metric 40
   !
  !
  interface GigabitEthernet0/0/0/2
   point-to-point
   address-family ipv4 unicast
-   metric 500
-  !       
-  address-family ipv6 unicast
    metric 500
   !
  !
@@ -1222,22 +1252,36 @@ router isis 1
   address-family ipv4 unicast
    metric 500
   !
-  address-family ipv6 unicast
-   metric 500
-  !
  !
  interface GigabitEthernet0/0/0/4
   point-to-point
   address-family ipv4 unicast
    metric 500
   !
-  address-family ipv6 unicast
-   metric 500
+ !        
+!
+router bgp 1
+ bgp router-id 1.1.1.5
+ address-family ipv4 unicast
+ !
+ address-family link-state link-state
+ !
+ neighbor 1.1.1.10
+  remote-as 1
+  update-source Loopback0
+  address-family link-state link-state
   !
  !
-!         
-mpls oam
+ neighbor 99.5.14.14
+  remote-as 2
+  address-family ipv4 unicast
+   route-policy bgp_in in
+   route-policy bgp_out out
+  !
+ !
 !
+mpls oam
+!         
 mpls traffic-eng
  interface GigabitEthernet0/0/0/2
   admin-weight 5
@@ -1247,7 +1291,7 @@ mpls traffic-eng
  !
 !
 segment-routing
-
+ 
 !
         </entry>
             <entry key="AutoNetkit.mgmt_ip" type="string"/>
