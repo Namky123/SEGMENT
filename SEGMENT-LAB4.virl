@@ -3206,18 +3206,21 @@ description OOB Management
   no shutdown
 !
 interface GigabitEthernet0/0/0/0
+ shutdown               
  description to P2
  cdp
  ipv4 address 99.2.13.13 255.255.255.0
  ipv6 address 2001::99:2:13:13/112
 !
 interface GigabitEthernet0/0/0/1
+ shutdown               
  description to P3
  cdp
  ipv4 address 99.3.13.13 255.255.255.0
  ipv6 address 2001::99:3:13:13/112
 !
 interface GigabitEthernet0/0/0/2
+shutdown                
  description to L3VPN_CE23
  cdp
  vrf RED
@@ -3566,6 +3569,7 @@ description OOB Management
   no shutdown
 !
 interface GigabitEthernet0/0/0/0
+shutdown                
  description to P5
  cdp
  ipv4 address 99.5.14.14 255.255.255.0
@@ -3578,6 +3582,7 @@ interface GigabitEthernet0/0/0/1
  ipv6 address 2001::99:6:14:14/112
 !
 interface GigabitEthernet0/0/0/2
+ shutdown               
  description to L3VPN_CE24
  cdp
  vrf RED
@@ -4194,6 +4199,7 @@ interface MgmtEth0/RP0/CPU0/0
   no shutdown
 !
 interface GigabitEthernet0/0/0/0
+ shutdown               
  description to P4
  cdp
  ipv4 address 99.4.10.10 255.255.255.0
