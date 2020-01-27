@@ -348,11 +348,52 @@ call-home
   active
   destination transport-method http
  !
+hostname P2
+group ISIS_TI-LFA
+ router isis '.*'
+  interface 'Gi.*'
+   address-family ipv4 unicast
+    fast-reroute per-prefix
+    fast-reroute per-prefix ti-lfa
+   !
+  !
+ !
+end-group
+logging console emergencies
+service timestamps log datetime msec
+service timestamps debug datetime msec
+domain lookup disable
+telnet vrf default ipv4 server max-servers 10
+username cisco
+ group root-lr
+ group cisco-support
+ secret 5 $1$vSX6$hkqwJtGvB06YA/9GreSTA/
+!         
+cdp
+line template vty
+ timestamp
+ exec-timeout 720 0
+!
+line console
+ timestamp disable
+ exec-timeout 0 0
+!
+line default
+ exec-timeout 720 0
+!
+vty-pool default 0 50
+icmp ipv4 rate-limit unreachable disable
+call-home
+ service active
+ contact smart-licensing
+ profile CiscoTAC-1
+  active
+  destination transport-method http
+ !
 !
 interface Loopback0
  description Loopback
  ipv4 address 1.1.1.2 255.255.255.255
- ipv6 address 2001::1:1:1:2/128
 !
 interface MgmtEth0/RP0/CPU0/0
 description OOB Management
@@ -365,25 +406,21 @@ interface GigabitEthernet0/0/0/0
  description to P4
  cdp
  ipv4 address 99.2.4.2 255.255.255.0
- ipv6 address 2001::99:2:4:2/112
 !
 interface GigabitEthernet0/0/0/1
  description to P1
  cdp
  ipv4 address 99.1.2.2 255.255.255.0
- ipv6 address 2001::99:1:2:2/112
 !
 interface GigabitEthernet0/0/0/2
  description to P3
  cdp
  ipv4 address 99.2.3.2 255.255.255.0
- ipv6 address 2001::99:2:3:2/112
 !
 interface GigabitEthernet0/0/0/3
  description to PE3
  cdp
  ipv4 address 99.2.13.2 255.255.255.0
- ipv6 address 2001::99:2:13:2/112
 !
 interface GigabitEthernet0/0/0/4
  shutdown
@@ -403,46 +440,30 @@ router isis 1
   mpls traffic-eng router-id Loopback0
   segment-routing mpls
  !
- address-family ipv6 unicast
-  metric-style wide
-  segment-routing mpls
- !
  interface Loopback0
   passive
   address-family ipv4 unicast
    prefix-sid index 2
-  !
-  address-family ipv6 unicast
-   prefix-sid index 1002
   !
  !
  interface GigabitEthernet0/0/0/0
   point-to-point
   address-family ipv4 unicast
   !
-  address-family ipv6 unicast
-  !
  !
  interface GigabitEthernet0/0/0/1
   point-to-point
   address-family ipv4 unicast
-  !
-  address-family ipv6 unicast
   !
  !
  interface GigabitEthernet0/0/0/2
   point-to-point
   address-family ipv4 unicast
   !
-  address-family ipv6 unicast
-  !
  !
  interface GigabitEthernet0/0/0/3
   point-to-point
   address-family ipv4 unicast
-   metric 500
-  !
-  address-family ipv6 unicast
    metric 500
   !
  !
@@ -455,7 +476,6 @@ mpls traffic-eng
  !
 !
 segment-routing
-
 !
         </entry>
             <entry key="AutoNetkit.mgmt_ip" type="string"/>
