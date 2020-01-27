@@ -3434,6 +3434,72 @@ call-home
 !
 ipv4 access-list NONE
  10 deny ipv4 any any
+hostname PE4
+group ISIS_TI-LFA
+ router isis '.*'
+  interface 'Gi.*'
+   address-family ipv4 unicast
+    fast-reroute per-prefix
+    fast-reroute per-prefix ti-lfa
+   !
+   address-family ipv6 unicast
+    fast-reroute per-prefix
+    fast-reroute per-prefix ti-lfa
+   !
+  !
+ !
+end-group
+service timestamps log datetime msec
+service timestamps debug datetime msec
+domain lookup disable
+telnet vrf default ipv4 server max-servers 10
+username cisco
+ group root-lr
+ group cisco-support
+ secret 5 $1$dKfh$Dg62LsLugyPsNDltQjnp.1
+!
+cdp
+vrf RED
+ address-family ipv4 unicast
+  import route-target
+   1:1
+  !
+  export route-target
+   1:1
+  !
+ !
+ address-family ipv6 unicast
+  import route-target
+   2:1
+  !
+  export route-target
+   2:1
+  !
+ !
+!
+line template vty
+ timestamp
+ exec-timeout 720 0
+!
+line console
+ timestamp disable
+ exec-timeout 0 0
+!
+line default
+ exec-timeout 720 0
+!
+vty-pool default 0 50
+icmp ipv4 rate-limit unreachable disable
+call-home
+ service active
+ contact smart-licensing
+ profile CiscoTAC-1
+  active
+  destination transport-method http
+ !
+!
+ipv4 access-list NONE
+ 10 deny ipv4 any any
 !         
 interface Loopback0
  description Loopback
@@ -3487,11 +3553,25 @@ interface GigabitEthernet0/0/0/5
 interface GigabitEthernet0/0/0/6
  shutdown
 !
+route-policy SID($SID)
+  set label-index $SID
+end-policy
+!
+route-policy bgp_in
+  pass
+end-policy
+!
+route-policy bgp_out
+  pass
+end-policy
+!
 router isis 1
  is-type level-2-only
  net 49.0001.0000.0000.0014.00
  address-family ipv4 unicast
   metric-style wide
+  mpls traffic-eng level-2-only
+  mpls traffic-eng router-id Loopback0
   segment-routing mpls
  !
  address-family ipv6 unicast
@@ -3508,6 +3588,7 @@ router isis 1
   !
  !
  interface GigabitEthernet0/0/0/0
+  passive
   point-to-point
   address-family ipv4 unicast
    metric 500
@@ -3517,6 +3598,7 @@ router isis 1
   !
  !
  interface GigabitEthernet0/0/0/1
+  passive
   point-to-point
   address-family ipv4 unicast
    metric 500
@@ -3526,43 +3608,30 @@ router isis 1
   !
  !
 !
-router bgp 1
+router bgp 2
  bgp router-id 1.1.1.14
  address-family ipv4 unicast
-  network 100.1.1.14/32
+  network 100.1.1.14/32 route-policy SID(2014)
+  allocate-label all
  !
- address-family vpnv4 unicast
- !
- address-family ipv6 unicast
-  network 2001::100:1:1:14/128
- !
- address-family vpnv6 unicast
- !
- neighbor 1.1.1.10
+ neighbor 99.5.14.5
   remote-as 1
-  description ## to RR Node10 ##
-  update-source Loopback0
   address-family ipv4 unicast
+   route-policy bgp_in in
+   route-policy bgp_out out
   !
-  address-family vpnv4 unicast
-  !
-  address-family vpnv6 unicast
+  address-family ipv4 labeled-unicast
+   route-policy bgp_in in
+   route-policy bgp_out out
   !
  !
- neighbor 2001::1:1:1:10
+ neighbor 99.6.14.6
   remote-as 1
-  description ## to RR Node10 ##
-  update-source Loopback0
-  address-family ipv6 unicast
-  !
- !
- vrf RED
-  rd 1:14
   address-family ipv4 unicast
-   network 99.9.14.0/24
+   route-policy bgp_in in
+   route-policy bgp_out out
   !
-  address-family ipv6 unicast
-   network 2001::99:9:14:0/112
+  address-family ipv4 labeled-unicast
   !
  !
 !
@@ -3570,7 +3639,7 @@ l2vpn
  pw-class EoMPLS-PWCLASS
   encapsulation mpls
   !
- !
+ !        
  xconnect group XCONNECT_GROUP
   p2p CE23
    interface GigabitEthernet0/0/0/2.100
@@ -3592,8 +3661,7 @@ mpls ldp
   !
  !
 !
-segment-routing
-
+segment-routing        
 !
         </entry>
             <entry key="AutoNetkit.mgmt_ip" type="string"/>
