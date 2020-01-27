@@ -2732,16 +2732,76 @@ call-home
   active
   destination transport-method http
  !
+hostname PE2
+group ISIS_TI-LFA
+ router isis '.*'
+  interface 'Gi.*'
+   address-family ipv4 unicast
+    fast-reroute per-prefix
+    fast-reroute per-prefix ti-lfa
+   !
+  !
+ !
+end-group
+service timestamps log datetime msec
+service timestamps debug datetime msec
+domain lookup disable
+telnet vrf default ipv4 server max-servers 10
+username cisco
+ group root-lr
+ group cisco-support
+ secret 5 $1$al5w$JjRbqp.ubZA4NZh.tmYSJ0
+!
+cdp       
+vrf RED
+ address-family ipv4 unicast
+  import route-target
+   1:1
+  !
+  export route-target
+   1:1
+  !
+ !
+ address-family ipv6 unicast
+  import route-target
+   2:1
+  !
+  export route-target
+   2:1
+  !
+ !
+!
+line template vty
+ timestamp
+ exec-timeout 720 0
+!
+line console
+ timestamp disable
+ exec-timeout 0 0
+!
+line default
+ exec-timeout 720 0
+!
+vty-pool default 0 50
+icmp ipv4 rate-limit unreachable disable
+call-home
+ service active
+ contact smart-licensing
+ profile CiscoTAC-1
+  active
+  destination transport-method http
+ !
 !
 interface Loopback0
  description Loopback
  ipv4 address 1.1.1.12 255.255.255.255
- ipv6 address 2001::1:1:1:12/128
 !
+interface Loopback2
+ ipv4 address 2.1.1.12 255.255.255.255
+!         
 interface Loopback100
  description BGP prefix
  ipv4 address 100.1.1.12 255.255.255.255
- ipv6 address 2001::100:1:1:12/128
 !
 interface MgmtEth0/RP0/CPU0/0
  description OOB Management
@@ -2754,24 +2814,20 @@ interface GigabitEthernet0/0/0/0
  description to P3
  cdp
  ipv4 address 99.3.12.12 255.255.255.0
- ipv6 address 2001::99:3:12:12/112
 !
 interface GigabitEthernet0/0/0/1
  description to P7
  cdp
  ipv4 address 99.7.12.12 255.255.255.0
- ipv6 address 2001::99:7:12:12/112
 !
 interface GigabitEthernet0/0/0/2
  description to L3VPN_CE22
- cdp
+ cdp      
  vrf RED
  ipv4 address 99.9.12.12 255.255.255.0
+ ipv4 address 88.9.12.12 255.255.255.0 secondary
+ ipv6 address 2001::88:9:12:12/112
  ipv6 address 2001::99:9:12:12/112
-!
-interface GigabitEthernet0/0/0/2.100 l2transport
- description to L2VPN_CE22
- encapsulation dot1q 100
 !
 interface GigabitEthernet0/0/0/3
  shutdown
@@ -2783,7 +2839,29 @@ interface GigabitEthernet0/0/0/5
  shutdown
 !
 interface GigabitEthernet0/0/0/6
- shutdown 
+ shutdown
+!
+community-set LOWLAT
+  1:1111
+end-set
+!
+community-set LOWCOST
+  1:2222
+end-set
+!
+route-policy ADDCOMM($COMM)
+  set community $COMM
+end-policy
+!
+route-policy VPNV6_IN
+  if community matches-any LOWLAT then
+    set mpls traffic-eng attributeset LOWLAT
+  endif
+  if community matches-every LOWCOST then
+    set mpls traffic-eng attributeset LOWCOST
+  endif
+  pass
+end-policy
 !
 router isis 1
  is-type level-2-only
@@ -2794,51 +2872,38 @@ router isis 1
   mpls traffic-eng router-id Loopback0
   segment-routing mpls
  !
- address-family ipv6 unicast
-  metric-style wide
-  segment-routing mpls
- !
  interface Loopback0
   passive
   address-family ipv4 unicast
    prefix-sid index 12
   !
-  address-family ipv6 unicast
-   prefix-sid index 1012
+ !
+ interface Loopback2
+  passive
+  address-family ipv4 unicast
   !
- !        
+ !
  interface GigabitEthernet0/0/0/0
   point-to-point
   address-family ipv4 unicast
-   metric 500
-  !
-  address-family ipv6 unicast
-   metric 500
+   metric 10
   !
  !
  interface GigabitEthernet0/0/0/1
   point-to-point
   address-family ipv4 unicast
-   metric 500
-  !
-  address-family ipv6 unicast
-   metric 500
+   metric 10
   !
  !
 !
 router bgp 1
  bgp router-id 1.1.1.12
  address-family ipv4 unicast
-  network 100.1.1.12/32
+  network 100.1.1.12/32 route-policy ADDCOMM(LOWLAT)
  !
  address-family vpnv4 unicast
  !
- address-family ipv6 unicast
-  network 2001::100:1:1:12/128
- !
  address-family vpnv6 unicast
- !
- address-family l2vpn vpls-vpws
  !
  neighbor 1.1.1.10
   remote-as 1
@@ -2849,53 +2914,31 @@ router bgp 1
   address-family vpnv4 unicast
   !
   address-family vpnv6 unicast
-  !
-  address-family l2vpn vpls-vpws
-  !
- !        
- neighbor 2001::1:1:1:10
-  remote-as 1
-  description ## to RR Node10 ##
-  update-source Loopback0
-  address-family ipv6 unicast
+   route-policy VPNV6_IN in
   !
  !
  vrf RED
-  rd 1:12
+  rd auto
   address-family ipv4 unicast
-   network 99.9.12.0/24
+   network 88.9.12.0/24
+   network 99.9.12.0/24 route-policy ADDCOMM(LOWLAT)
   !
   address-family ipv6 unicast
-   network 2001::99:9:12:0/112
-  !
- !
-!
-l2vpn
- xconnect group XCONNECT_GROUP
-  mp2mp CE22
-   vpn-id 100
-   l2-encapsulation vlan
-   autodiscovery bgp
-    rd auto
-    route-target 1:1
-    signaling-protocol bgp
-     ce-id 22
-      interface GigabitEthernet0/0/0/2.100 remote-ce-id 21
-     !
-    !
-   !
+   network 2001::88:9:12:0/112
+   network 2001::99:9:12:0/112 route-policy ADDCOMM(LOWCOST)
   !
  !
 !
 mpls oam
 !
 mpls traffic-eng
- path-selection
-  metric igp
+ attribute-set p2p-te LOWCOST
+  path-selection
+   metric igp
+  !
  !
-!
+!         
 segment-routing
-
 !
         </entry>
             <entry key="AutoNetkit.mgmt_ip" type="string"/>
