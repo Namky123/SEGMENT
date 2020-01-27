@@ -3819,10 +3819,74 @@ call-home
   active
   destination transport-method http
  !
+hostname PE5
+group ISIS_TI-LFA
+ router isis '.*'
+  interface 'Gi.*'
+   address-family ipv4 unicast
+    fast-reroute per-prefix
+    fast-reroute per-prefix ti-lfa
+   !
+  !
+ !
+end-group
+service timestamps log datetime msec
+service timestamps debug datetime msec
+domain lookup disable
+telnet vrf default ipv4 server max-servers 10
+username cisco
+ group root-lr
+ group cisco-support
+ secret 5 $1$WtpI$HHOq.juBMf7nbHG9g4yLf0
+!
+cdp       
+vrf RED
+ address-family ipv4 unicast
+  import route-target
+   1:1
+  !
+  export route-target
+   1:1
+  !
+ !
+ address-family ipv6 unicast
+  import route-target
+   2:1
+  !
+  export route-target
+   2:1
+  !
+ !
+!
+line template vty
+ timestamp
+ exec-timeout 720 0
+!
+line console
+ timestamp disable
+ exec-timeout 0 0
+!
+line default
+ exec-timeout 720 0
+!
+vty-pool default 0 50
+icmp ipv4 rate-limit unreachable disable
+ipv4 unnumbered mpls traffic-eng Loopback0
+call-home
+ service active
+ contact smart-licensing
+ profile CiscoTAC-1
+  active
+  destination transport-method http
+ !
 !
 interface Loopback0
  description Loopback
  ipv4 address 1.1.1.15 255.255.255.255
+!
+interface Loopback100
+ description BGP prefix
+ ipv4 address 100.1.1.15 255.255.255.255
 !
 interface MgmtEth0/RP0/CPU0/0
 description OOB Management
@@ -3832,20 +3896,23 @@ description OOB Management
   no shutdown
 !
 interface GigabitEthernet0/0/0/0
- description to P8
- cdp
- ipv4 address 99.8.15.15 255.255.255.0
-!
-interface GigabitEthernet0/0/0/1
  description to P9
  cdp
  ipv4 address 99.9.15.15 255.255.255.0
 !
+interface GigabitEthernet0/0/0/1
+ description to P8
+ cdp
+ ipv4 address 99.8.15.15 255.255.255.0
+!
 interface GigabitEthernet0/0/0/2
- shutdown
+ description L3VPN_CE25
+ vrf RED
+ ipv4 address 99.9.15.15 255.255.255.0
+ ipv6 address 2001::99:9:15:15/112
 !
 interface GigabitEthernet0/0/0/3
- shutdown 
+ shutdown
 !
 interface GigabitEthernet0/0/0/4
  shutdown
@@ -3856,9 +3923,36 @@ interface GigabitEthernet0/0/0/5
 interface GigabitEthernet0/0/0/6
  shutdown
 !
-router isis 1
- is-type level-2-only
- net 49.0001.0000.0000.0015.00
+community-set LOWLAT
+  1:1111
+end-set
+!
+community-set LOWCOST
+  1:2222
+end-set
+!
+route-policy bgp_in
+  set mpls traffic-eng attributeset DEFAULT
+  pass
+end-policy
+!
+route-policy ADDCOMM($COMM)
+  set community $COMM
+end-policy
+!
+route-policy bgp_out
+  pass
+end-policy
+!
+route-policy VPNV4_IN
+  if community matches-any LOWLAT then
+    set mpls traffic-eng attributeset LOWLAT
+  endif
+  pass
+end-policy
+!
+router isis 2
+ net 49.0002.1111.0000.0015.00
  address-family ipv4 unicast
   metric-style wide
   mpls traffic-eng level-2-only
@@ -3874,11 +3968,51 @@ router isis 1
  interface GigabitEthernet0/0/0/0
   point-to-point
   address-family ipv4 unicast
+   metric 500
   !
  !
  interface GigabitEthernet0/0/0/1
   point-to-point
   address-family ipv4 unicast
+   metric 500
+  !
+ !
+!
+router bgp 2
+ bgp router-id 1.1.1.15
+ address-family ipv4 unicast
+  network 100.1.1.15/32
+ !
+ address-family vpnv4 unicast
+ !
+ address-family vpnv6 unicast
+ !
+ neighbor 1.1.1.10
+  remote-as 1
+  ebgp-multihop 255
+  shutdown
+  description ## to RR Node10 ##
+  update-source Loopback0
+  address-family ipv4 unicast
+   route-policy bgp_in in
+   route-policy bgp_out out
+  !
+  address-family vpnv4 unicast
+   route-policy bgp_in in
+   route-policy bgp_out out
+  !
+  address-family vpnv6 unicast
+   route-policy bgp_in in
+   route-policy bgp_out out
+  !
+ !
+ vrf RED
+  rd auto
+  address-family ipv4 unicast
+   network 99.9.15.0/24 route-policy ADDCOMM(LOWLAT)
+  !
+  address-family ipv6 unicast
+   network 2001::99:9:15:0/112
   !
  !
 !
@@ -3890,7 +4024,6 @@ mpls traffic-eng
  !
 !
 segment-routing
-!
 
 !
         </entry>
