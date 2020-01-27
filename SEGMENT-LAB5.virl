@@ -3568,8 +3568,7 @@ description OOB Management
  ipv4 address dhcp
   no shutdown
 !
-interface GigabitEthernet0/0/0/0
-shutdown                
+interface GigabitEthernet0/0/0/0          
  description to P5
  cdp
  ipv4 address 99.5.14.14 255.255.255.0
@@ -3581,8 +3580,7 @@ interface GigabitEthernet0/0/0/1
  ipv4 address 99.6.14.14 255.255.255.0
  ipv6 address 2001::99:6:14:14/112
 !
-interface GigabitEthernet0/0/0/2
- shutdown               
+interface GigabitEthernet0/0/0/2         
  description to L3VPN_CE24
  cdp
  vrf RED
